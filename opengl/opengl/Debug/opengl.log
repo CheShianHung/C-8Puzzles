@@ -1,0 +1,7 @@
+﻿  animation_ex.c
+c:\users\a2219\onedrive\documents\visual studio 2015\projects\opengl\opengl\animation_ex.c(181): warning C4101: 'temp': unreferenced local variable
+c:\users\a2219\onedrive\documents\visual studio 2015\projects\opengl\opengl\animation_ex.c(392): warning C4244: '=': conversion from 'int' to 'GLfloat', possible loss of data
+c:\users\a2219\onedrive\documents\visual studio 2015\projects\opengl\opengl\animation_ex.c(393): warning C4244: '=': conversion from 'int' to 'GLfloat', possible loss of data
+c:\users\a2219\onedrive\documents\visual studio 2015\projects\opengl\opengl\animation_ex.c(339): warning C4244: 'initializing': conversion from 'time_t' to 'int', possible loss of data
+  opengl.vcxproj -> C:\Users\a2219\OneDrive\Documents\Visual Studio 2015\Projects\opengl\Debug\opengl.exe
+  opengl.vcxproj -> C:\Users\a2219\OneDrive\Documents\Visual Studio 2015\Projects\opengl\Debug\opengl.pdb (Partial PDB)
