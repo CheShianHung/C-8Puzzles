@@ -15,7 +15,7 @@
 
 //@@***********************************************************************************@@
 // Constants
-#define WINDOW_XS 300							// Window size
+#define WINDOW_XS 300					// Window size
 #define WINDOW_YS 400
 #define WINDOW_NAME "8 Puzzle"			// Window name
 
@@ -28,24 +28,27 @@ typedef struct pt
 	GLfloat x, y;
 }MyPoint;
 
+// Node for each state
 struct node;
 typedef struct node {
-	int childrenSize;
-	int values[9];
 	int g;
 	int h;
 	int zeroPos;
-	int lastAction; //1: up, 2: down, 3: left, 4: right
+	int lastAction;			//1: up, 2: down, 3: left, 4: right
+	int childrenSize;
+	int values[9];
 	struct node *parent;
 	struct node *children;
 } Node;
 
+// List to sort the nodes
 struct list;
 typedef struct list {
 	Node *n;
 	struct list *next;
 } List;
 
+// List to store the solution
 struct solutionList;
 typedef struct solutionList {
 	int action;
@@ -61,20 +64,19 @@ SolutionList *h1Solution = NULL;
 SolutionList *h2Solution = NULL;
 SolutionList *currentSolution = NULL;
 
-int initValues[9];
 int values[9];
-int recLength = 90;		// size of puzzle
-int recHeight = 90;
-int offSetX = 5;
-int offSetY = 5;
-int doAnimation = 0;	// =0 no animation, 1= animation
-int gap = 1;			// step for animation
-int currentPosition;
+int initValues[9];
+
+int gap = 1;						// step for animation
+int h1Mode = 0;						// -2: manual finished, -1: manual, 0: before run, 1: running, 2: ready, 3: runningAnimation
+int h2Mode = 0;						// -2: manual finished, -1: manual, 0: before run, 1: running, 2: ready, 3: runningAnimation
+int hMethod = 0;					// 1: h1(), 2: h2()
+int offSet = 10;
+int recLength = 80;					// size of puzzle
+int doAnimation = 0;				// 0: no animation, 1: up, 2: down, 3: left, 4: right
 int selectedValue = -1;
+int currentPosition;
 int animationCounter;
-int h1Mode = 0; // -1: off, 0: before run, 1: running, 2: ready, 3: runningAnimation
-int h2Mode = 0; // -1: off, 0: before run, 1: running, 2: ready, 3: runningAnimation
-int hMethod = 0;
 int findingSolution = 0;
 int runningAnimation = 0;
 int solutionAnimationCounter = 0;
@@ -82,37 +84,37 @@ int solutionAnimationCounter = 0;
 
 //@@***********************************************************************************@@
 // Function prototypes
-void reshape_handler(int width, int height);
+void output(int x, int y, int mode, char *string);
+void mouse_func(int button, int state, int x, int y);
 void init_setup(int width, int height, char *windowName);
 void display_func(void);
 void keyboard_func(unsigned char c, int x, int y);
-void mouse_func(int button, int state, int x, int y);
 void animation_func(int val);
-void output(int x, int y, int mode, char *string);
-void drawTile(char *val, float x, float y);
-int getPosition(int x, int y);
-int getDirection(int p);
-void setupPuzzle();
-void drawAllTiles();
-void switchPosition(int *ary, int a, int b);
-int heuristic(int *ary);
+void reshape_handler(int width, int height);
+
 void aStar();
-void destroyTree(Node *n);
-void expendTree(Node *n);
-void displayTree(Node *n);
-List* addToList(List *h, Node *n);
-List* removeFront(List *h);
-void displayList(List *h);
-int isGoal(int *ary);
-SolutionList* addToSolutionList(SolutionList * h, Node *n);
-void displaySolutionList(SolutionList *h);
-int solvable(int *ary);
-void startAnimation(List* h);
+void drawTile(char *val, float x, float y);
+void setupPuzzle();
 void newProblem();
 void reloadProblem();
+void drawAllTiles();
+void switchPosition(int *ary, int a, int b);
 
+int isGoal(int *ary);
+int solvable(int *ary);
+int heuristic(int *ary);
+int getDirection(int p);
+int getPosition(int x, int y);
 
-//int moveCount(int *ary);
+void destroyTree(Node *n);
+void expendTree(Node *n);
+
+void displayList(List *h);
+List* addToList(List *h, Node *n);
+List* removeFront(List *h);
+
+void displaySolutionList(SolutionList *h);
+SolutionList* addToSolutionList(SolutionList * h, Node *n);
 
 //@@***********************************************************************************@@
 int main(int argc, char **argv)
@@ -121,9 +123,6 @@ int main(int argc, char **argv)
 
 	init_setup(WINDOW_XS, WINDOW_YS, WINDOW_NAME);
 	newProblem();
-	
-	//printf("current position: %d\n\n", currentPosition);
-	//printf("h1: %d\nh2: %d\n", heuristic1(values), heuristic2(values));
 
 	bottomLeftPt.x = 0;
 	bottomLeftPt.y = 0;
@@ -163,12 +162,12 @@ void display_func(void)
 {
 	int i;
 
-	glClearColor(0.0, 0.0, 0.0, 1.0);   // background color (yellow)
-	glClear(GL_COLOR_BUFFER_BIT);         // clearing the buffer not to keep the color
+	glClearColor(0.0, 0.0, 0.0, 1.0);			// background color (yellow)
+	glClear(GL_COLOR_BUFFER_BIT);				// clearing the buffer not to keep the color
 
-	/*
-										  // draw top of the puzzle board
-	glColor3f(0.2, 0.2, 0.2);				// setting pen color 
+	
+												// draw top of the puzzle board
+	glColor3f(0.5, 0.0, 0.0);					// setting pen color 
 	glBegin(GL_POLYGON);
 	glVertex2i(0, 300);
 	glVertex2i(300, 300);
@@ -176,33 +175,30 @@ void display_func(void)
 	glVertex2i(0, 400);
 	glEnd();
 
-	*/
+	
 
 	// banner
-	glColor3f(1.0, 1.0, 1.0);					// setting pen color
-	output(70, 360, 1, "CS4200/5200: 8 Puzzle");	// puzzle number
-	output(150, 320, 2, "Che Shian Hung");	// puzzle number
+	glColor3f(0.5, 0.5, 0.5);					// setting pen color
+	output(70, 360, 1, "CS4200/5200: 8 Puzzle");// puzzle number
+	output(150, 320, 2, "Che Shian Hung");		// puzzle number
 	
-	//h1Mode 
-	// -1: off, 0: before run, 1: running, 2: ready, 3: runningAnimation
-	//h2Mode
-	// -1: off, 0: before run, 1: running, 2: ready, 3: runningAnimation
-	//Manual mode
-	if (h1Mode == -1 && h2Mode == -1) {
-		output(10, 325, 2, "Manual mode");
+	// h1Mode, h2Mode 
+	// -2: manual finished, -1: manual, 0: before run, 1: running, 2: ready, 3: runningAnimation
+	if (h1Mode == -2 && h2Mode == -2) {
+		output(10, 335, 2, "Good job!");
+		output(10, 315, 2, "i: reset");
 	}
-	//Finding solution
+	else if (h1Mode == -1 && h2Mode == -1) {
+		output(10, 335, 2, "Manual mode");
+		output(10, 315, 2, "i: reset");
+	}
 	else if (h1Mode == 1 || h2Mode == 1) {
-		//printf("finding solution...\n");
 		output(10, 320, 2, "running a*...");
 	}
-	//Running animation
 	else if (h1Mode == 3 || h2Mode == 3) {
-		//printf("running solution...\n");
 		output(10, 320, 2, "Animating...");
 	}
 	else {
-		//printf("display else\n");
 		if (h1Mode == 0) {
 			output(10, 346, 2, "j: h1");
 		}
@@ -218,6 +214,7 @@ void display_func(void)
 		output(10, 308, 2, "s: manual");
 	}
 
+	// update text and mode and run aStar
 	if ((h1Mode == 1 && findingSolution == 0) || (h2Mode == 1 && findingSolution == 0)) {
 		findingSolution++;
 	}
@@ -225,23 +222,23 @@ void display_func(void)
 		aStar();
 	}
 
+	// update mode and run animation
 	if ((h1Mode == 3 && runningAnimation == 0) || (h2Mode == 3 && runningAnimation == 0)) {
 		runningAnimation++;
 	}
 	else if ((h1Mode == 3 && runningAnimation == 1) || h2Mode == 3 && runningAnimation == 1) {
-		//printf("start\n\n");
 		doAnimation = 5;
 	}
 
 	// draw the grids for the puzzle board
-	glColor3f(1.0, 1.0, 1.0);			// setting pen color
+	glColor3f(0.5, 0.5, 0.5);			// setting pen color
 	glBegin(GL_LINES);
 	for (i = 0; i < WINDOW_XS; i += 100)
 	{
-		glVertex2i(i, 0);		// vertical grid lines
+		glVertex2i(i, 0);				// vertical grid lines
 		glVertex2i(i, 300);
 
-		glVertex2i(0, i);		// horizontal grid lines
+		glVertex2i(0, i);				// horizontal grid lines
 		glVertex2i(300, i);
 	}
 	glVertex2i(0, 300);
@@ -251,58 +248,50 @@ void display_func(void)
 	drawAllTiles();
 
 	glFlush();
-
 	glutSwapBuffers();	// double buffering
 
 }	// end of display_func()
 
-
 	//@@***********************************************************************************@@
 void keyboard_func(unsigned char c, int x, int y)
 {
-	//printf("%c\n", c);
 	switch (c)
 	{
-		// -1: off, 0: before run, 1: running, 2: ready, 3: runningAnimation
-	case 'j':
-		if (h1Mode == 0 && h2Mode != 1 && h2Mode != 3) {
+	case 'j': // run h1() 
+		if ((h1Mode == -2 || h1Mode == 0) && h2Mode != 1 && h2Mode != 3) {
+			reloadProblem();
 			hMethod = 1;
 			findingSolution = 0;
 			h1Mode = 1;
-			//aStar();
 		}
 		break;
-	case 'k':
-		if (h2Mode == 0 && h1Mode != 1 && h1Mode != 3) {
+	case 'k': // run h2()
+		if ((h1Mode == -2 || h2Mode == 0) && h1Mode != 1 && h1Mode != 3) {
+			reloadProblem();
 			hMethod = 2;
 			findingSolution = 0;
 			h2Mode = 1;
-			//aStar();
 		}
 		break;
-	case 'n':
+	case 'n': // animate solution from h1()
 		if (h1Mode == 2 && h2Mode != 1 && h2Mode != 3) {
 			reloadProblem();
 			runningAnimation = 0;
-			hMethod = 1;
 			h1Mode = 3;
+			hMethod = 1;
 			solutionAnimationCounter = 0;
-			//startAnimation(h1Solution);
-			//h1Mode = 2;
 		}
 		break;
-	case 'm':
+	case 'm': // animate solution from h2()
 		if (h2Mode == 2 && h1Mode != 1 && h1Mode != 3) {
 			reloadProblem();
 			runningAnimation = 0;
-			hMethod = 2;
 			h2Mode = 3;
+			hMethod = 2;
 			solutionAnimationCounter = 0;
-			//startAnimation(h2Solution);
-			//h2Mode = 2;
 		}
 		break;
-	case 's':
+	case 's': // manual mode
 		if (h1Mode != 1 && h1Mode != 3 && h2Mode != 1 && h2Mode != 3) {
 			reloadProblem();
 			h1Mode = -1;
@@ -310,12 +299,12 @@ void keyboard_func(unsigned char c, int x, int y)
 			glutPostRedisplay();
 		}
 		break;
-	case 'i':
+	case 'i': //get new problem
 		newProblem();
 		break;
 	case 'Q':
 	case 'q':
-		//Destroy the list
+		//Destroy the lists
 		while (h1Solution) {
 			List *temp = h1Solution->next;
 			h1Solution = h1Solution->next;
@@ -337,17 +326,14 @@ void keyboard_func(unsigned char c, int x, int y)
 	//@@***********************************************************************************@@
 void mouse_func(int button, int state, int x, int y)
 {
+	// when in manual mode, done animation, and press down the mouse
 	if (state == GLUT_DOWN && doAnimation == 0 && h1Mode == -1 && h2Mode == -1) {
-		int p = getPosition(x, WINDOW_YS - y);
-		//printf("position: %d\n", p);
-		
-		if (p != -1 && p != currentPosition){
+		int p = getPosition(x, WINDOW_YS - y);	// the position user clicks
+		if (p != -1 && p != currentPosition){   // if the position is valid and not zero
 			selectedValue = values[p];
-			int d = getDirection(p);
-			//printf("direction: %d\n", d);
-			//printf("values: %d\n", selectedValue);
-			doAnimation = d;
-			switch (d) {
+			int d = getDirection(p);			// get direction of sliding
+			doAnimation = d;					// do animation
+			switch (d) {						// swap values
 			case 1: 
 				switchPosition(values, currentPosition, currentPosition + 3);
 				currentPosition += 3;
@@ -371,42 +357,45 @@ void mouse_func(int button, int state, int x, int y)
 	}
 }
 
-//@@***********************************************************************************@@
+	//@@***********************************************************************************@@
 void animation_func(int val)
 {
-	//printf("ac: %d\n", animationCounter);
+	// up
 	if (doAnimation == 1) {
 		boxCordinates[selectedValue - 1].y += gap;
 		animationCounter++;
 	}
+	// down
 	else if (doAnimation == 2) {
 		boxCordinates[selectedValue - 1].y -= gap;
 		animationCounter++;
 	}
+	// left
 	else if (doAnimation == 3) {
 		boxCordinates[selectedValue - 1].x -= gap;
 		animationCounter++;
 	}
+	// right
 	else if (doAnimation == 4) {
 		boxCordinates[selectedValue - 1].x += gap;
 		animationCounter++;
 	}
+	// solutions from h1() or h2()
 	else if (doAnimation == 5) {
-		//printf("running animation \n\n");
+		// select solution list
 		if (!currentSolution) {
-			//printf("cannot find solution\n\n");
 			if (hMethod == 1) currentSolution = h1Solution;
 			else currentSolution = h2Solution;
 		}
 		else {
-			//solutionAnimationCounter++;
+			// after a step
 			if (solutionAnimationCounter != 0 && solutionAnimationCounter % 101 == 0) {
+				// get next action
 				if (currentSolution->next) {
-					//printf("next solution\n");
 					currentSolution = currentSolution->next;
 				}
+				// animation finished
 				else {
-					//printf("done\n");
 					if (hMethod == 1) h1Mode = 2;
 					else h2Mode = 2;
 					doAnimation = 0;
@@ -414,6 +403,7 @@ void animation_func(int val)
 					currentSolution = NULL;
 				}					
 			}
+			// sliding tile
 			else {
 				switch (currentSolution->action) {
 				case 1:
@@ -429,17 +419,20 @@ void animation_func(int val)
 					boxCordinates[currentSolution->movePosition - 1].x += gap;
 					break;
 				}
-				//printf("movePos: %d\n", currentSolution->movePosition);
 			}
 			solutionAnimationCounter++;
 		}
 	}
+	// counter for manual mode
 	if (animationCounter >= 100) {
 		doAnimation = 0;
+		if (isGoal(values) == 1) {
+			h1Mode = -2;
+			h2Mode = -2;
+		}
 	}
 
 	glutPostRedisplay();
-
 	glutTimerFunc(ANI_MSEC, animation_func, 0);
 
 }	//end animation_func
@@ -466,21 +459,23 @@ void output(int x, int y, int mode, char *string)
 	}
 }
 
+	//@@***********************************************************************************@@
 void drawTile(char *val, float x, float y) {
 	// draw a puzzle piece
 	int x2 = (int)x;
 	int y2 = (int)y;
-	glColor3f(1.0, 1.0, 1.0);			// setting pen color
+	glColor3f(0.0, 0.0, 0.6);			// setting pen color
 	glBegin(GL_POLYGON);
-	glVertex2i(x2 + offSetX, y2 + offSetY);
-	glVertex2i(x2 + offSetX + recLength, y2 + offSetY);
-	glVertex2i(x2 + offSetX + recLength, y2 + offSetY + recHeight);
-	glVertex2i(x2 + offSetX, y2 + offSetY + recHeight);
+	glVertex2i(x2 + offSet, y2 + offSet);
+	glVertex2i(x2 + offSet + recLength, y2 + offSet);
+	glVertex2i(x2 + offSet + recLength, y2 + offSet + recLength);
+	glVertex2i(x2 + offSet, y2 + offSet + recLength);
 	glEnd();
-	glColor3f(0.0, 0.0, 0.0);			// setting pen color
-	output(x2 + offSetX + 39, y2 + offSetY + 37, 1, val);	// puzzle number
+	glColor3f(0.5, 0.5, 0.5);			// setting pen color
+	output(x2 + offSet + 34, y2 + offSet + 31, 1, val);	// puzzle number
 }
 
+	//@@ get the position from x, y coordinates*******************************************@@
 int getPosition(int x, int y) {
 	if (x < 95 && x > 5) {
 		if (y < 95 && y > 5) return 6;
@@ -501,6 +496,7 @@ int getPosition(int x, int y) {
 	return -1;
 }
 
+	//@@ get direction (1 - 4) from a position and the sero position***********************@@
 int getDirection(int p) {
 	//up
 	if (p == currentPosition + 3) return 1;
@@ -513,12 +509,13 @@ int getDirection(int p) {
 	else return 0;
 }
 
+	//@@ set up random problem**************************************************************@@
 void setupPuzzle() {
-
 	int seed = (int)time(NULL);
 	int usedValues[9];
-
 	srand(seed);
+
+	// generating new problem if not solvable
 	do {
 		for (int i = 0; i < 9; i++) {
 			usedValues[i] = i;
@@ -543,9 +540,9 @@ void setupPuzzle() {
 			else values[i] = i;
 			*/
 		}
-		//printf("problem check: %d\n",solvable(values));
 	} while (solvable(values) == 0);
 
+	// set up coordinates
 	for(int i = 0; i < 9; i++){
 		initValues[i] = values[i];
 		if (values[i] != 0) {
@@ -597,6 +594,8 @@ void setupPuzzle() {
 
 }
 
+
+	//@@ draw all eight tiles and numbers***************************************************@@
 void drawAllTiles() {
 	char str[20];
 	for (int i = 0; i < 9; i++) {
@@ -608,12 +607,14 @@ void drawAllTiles() {
 	}
 }
 
+	//@@ switch positions in an array***************************************************@@
 void switchPosition(int *ary, int a, int b) {
 	int temp = ary[a];
 	ary[a] = ary[b];
 	ary[b] = temp;
 }
 
+	//@@ h1() and h2()******************************************************************@@
 int heuristic(int *ary) {
 	int count = 0;
 	if (hMethod == 1) {
@@ -627,28 +628,17 @@ int heuristic(int *ary) {
 		for (int i = 0; i < 9; i++) {
 			if (ary[i] != i) {
 				count += abs(ary[i] / 3 - i / 3) + abs(ary[i] % 3 - i % 3);
-				//printf("%d: %d\n", ary[i], abs(ary[i] / 3 - i / 3) + abs(ary[i] % 3 - i % 3));
 			}
 		}
 	}
-	
-	/*
-	if (count > 50) {
-		printf("heuristic\n");
-		for (int i = 0; i < 9; i++) {
-			printf("%d  ", ary[i]);
-		}
-		printf("\ncount: %d\n", count);
-	}
-	*/
 
 	return count;
 }
 
+	//@@ running a* *********************************************************************@@
 void aStar() {
-	printf("start a*...\n");
-	//printf("hMethod: %d\n", hMethod);
-	//Create root
+	printf("start a* with h%d()...\n\n", hMethod);
+	// create root
 	Node *r = (Node*)malloc(sizeof(Node));
 	for (int i = 0; i < 9; i++) {
 		r->values[i] = initValues[i];
@@ -660,27 +650,22 @@ void aStar() {
 	r->parent = NULL;
 	Node *root = r;
 
-	//Create exploring list
+	// create exploring list
 	List *hList = NULL;
 	hList = addToList(hList, root);
-	//displayList(hList);
 	
-	int testCount = 0;
+	// searching
 	while (hList->n->h != 0) {
-	//while(testCount < 5){
 		Node *fn = hList->n;
 		hList = removeFront(hList);
 		expendTree(fn);
 		for (int i = 0; i < fn->childrenSize; i++) {
 			hList = addToList(hList, &fn->children[i]);
-			//displayList(hList);
 		}
-		//printf("[%d, %d]\n", hList->n->g, hList->n->h);
 		//displayList(hList);
-		//testCount++;
 	}
 	
-	//Input solution
+	// input solution
 	Node *t = hList->n;
 	while (t->parent) {
 		if (hMethod == 1) {
@@ -691,9 +676,9 @@ void aStar() {
 		}
 		t = t->parent;
 	}
-	
-
-	//Display solutions
+	printf("step count: %d\n\n", hList->n->g);
+		
+	// display solutions
 	if (hMethod == 1) {
 		displaySolutionList(h1Solution);
 	}
@@ -701,10 +686,10 @@ void aStar() {
 		displaySolutionList(h2Solution);
 	}
 
-	//Destroy the tree
+	// destroy the tree
 	destroyTree(root);
 
-	//Destroy the list
+	// destroy the list
 	while (hList) {
 		List *temp = hList->next;
 		hList = hList->next;
@@ -716,19 +701,14 @@ void aStar() {
 	else h2Mode = 2;
 	findingSolution = 0;
 	
-	printf("a* finished!\n\n");
+	printf("a* finished!\n\n\n");
 }
 
+	//@@********************************************************************************@@
 void destroyTree(Node *n) {
 	if (n != NULL) {
-		//if (n->parent) {
-			//printf("parent[%d, %d]\n", n->parent->g, n->parent->h);
-		//}
 		n->parent = NULL;
-		//free(n->parent);
-		//printf("current at [%d, %d, %d]\n", n->g, n->h, n->childrenSize);
 		for (int i = 0; i < n->childrenSize; i++) {
-			//printf("destroy children from [%d, %d]\n", n->g, n->h); 
 			destroyTree(&n->children[i]);
 		}
 		n = NULL;
@@ -736,6 +716,7 @@ void destroyTree(Node *n) {
 	}
 }
 
+	//@@********************************************************************************@@
 void expendTree(Node *n) {
 	int zeroPos = n->zeroPos;
 	int actions[4];
@@ -743,6 +724,7 @@ void expendTree(Node *n) {
 		actions[i] = 0;
 	}
 
+	// counting children size
 	if (zeroPos + 3 <= 8 && n->lastAction != 2) {
 		n->childrenSize++;
 		actions[0] = 1;
@@ -760,16 +742,8 @@ void expendTree(Node *n) {
 		actions[3] = 1;
 	}
 
-	/*
-	printf("expend from [g, h, childrenSize, lastAction, zeroPos] => [%d, %d, %d, %d, %d]\n", n->g, n->h, n->childrenSize, n->lastAction, n->zeroPos);
-	for (int i = 0; i < 9; i++) {
-		printf("%d  ", n->values[i]);
-	}
-	printf("\n");
-	*/
-
+	// create and intialize children
 	n->children = (Node*)calloc(n->childrenSize, sizeof(Node));
-	
 	int counter = 0;
 	for (int i = 0; i < 4; i++) {
 		if (actions[i] == 1) {		
@@ -802,36 +776,38 @@ void expendTree(Node *n) {
 			n->children[counter].children = NULL;
 
 			counter++;
-			//printf("expend children [%d, %d, %d]\n", n->children[counter - 1].g, n->children[counter - 1].h, n->children[counter - 1].childrenSize);
 		}
 	}
 }
 
-void displayTree(Node* h) {
-	
-}
-
+	//@@ add new node to the list and sort by total cost*************************************@@
 List* addToList(List *h, Node *n) {
 	List *newNode = (List*)malloc(sizeof(List));
 	newNode->n = n;
 	newNode->next = NULL;
+	// if the list is empty
 	if (!h) {
 		h = newNode;
 	}
+	// if none empty list
 	else {
 		List *l = h;
 		List *pre = NULL;
+		// if the cost is greater than the current node's cost
 		while (l && n->g + n->h > l->n->g + l->n->h) {
 			pre = l;
 			l = l->next;
 		}
+		// insert at front
 		if (!pre) {
 			newNode->next = h;
 			h = newNode;
 		}
+		// insert at the end
 		else if (!l) {
 			pre->next = newNode;
 		}
+		// insert in middle
 		else {
 			pre->next = newNode;
 			newNode->next = l;
@@ -841,6 +817,7 @@ List* addToList(List *h, Node *n) {
 	return h;
 }
 
+	//@@ remove the front of the list*************************************************************@@
 List* removeFront(List *h) {
 	List* temp = h;
 	h = h->next;
@@ -848,6 +825,7 @@ List* removeFront(List *h) {
 	return h;
 }
 
+	//@@ display the list for testing*************************************************************@@
 void displayList(List* h) {
 	if (h) {
 		printf("[g, h]: ");
@@ -863,6 +841,7 @@ void displayList(List* h) {
 	}
 }
 
+	//@@ check if the array matchs the goal state*************************************************@@
 int isGoal(int *ary) {
 	int same = 1;
 	for (int i = 0; i < 9; i++) {
@@ -871,6 +850,7 @@ int isGoal(int *ary) {
 	return same;
 }
 
+	//@@ add the node information to the solution list*********************************************@@
 SolutionList* addToSolutionList(SolutionList *h, Node *n) {
 	SolutionList *newSolution = (SolutionList*)malloc(sizeof(SolutionList));
 	newSolution->action = n->lastAction;
@@ -894,6 +874,7 @@ SolutionList* addToSolutionList(SolutionList *h, Node *n) {
 	return h;
 }
 
+	//@@ display the solutions to the user***************************************************@@
 void displaySolutionList(SolutionList *h) {
 	if (h) {
 		printf("actions: ");
@@ -901,44 +882,29 @@ void displaySolutionList(SolutionList *h) {
 		while (sl) {
 			switch (sl->action) {
 			case 1:
-				printf("%d up   ", sl->movePosition);
+				printf("%d up, ", sl->movePosition);
 				break;
 			case 2:
-				printf("%d down   ", sl->movePosition);
+				printf("%d down, ", sl->movePosition);
 				break;
 			case 3:
-				printf("%d left   ", sl->movePosition);
+				printf("%d left, ", sl->movePosition);
 				break;
 			case 4:
-				printf("%d right   ", sl->movePosition);
+				printf("%d right, ", sl->movePosition);
 				break;
 			}
 			sl = sl->next;
 		}
-		printf("\n");
+		printf("\n\n");
 	}
 	else {
-		printf("empty list\n");
+		printf("empty list\n\n");
 	}
 }
 
+	//@@ check if the problem is solvable***************************************************@@
 int solvable(int *ary) {
-	/*
-	int counter = 0;
-	for (int i = 0; i < 9; i++) {
-		if (ary[i] != 0) {
-			int count = ary[i] - 1;
-			for (int j = 0; j < i; j++) {
-				if (ary[j] <= ary[i] && count > 0) count--;
-			}
-			counter += count;
-			//printf("%d: %d   ", ary[i], count);
-		}
-	}
-	//printf("\nsolvable count: %d\n", counter);
-	if (counter % 2 == 0) return 1;
-	else return 0;
-	*/
 	int counter = 0;
 	for (int i = 0; i < 9 - 1; i++) {
 		for (int j = i + 1; j < 9; j++) {
@@ -950,31 +916,12 @@ int solvable(int *ary) {
 	else return 0;
 }
 
-void startAnimation(List *h) {
-	if (h) {
-		printf("running solution...\n");
-		SolutionList *sl = h;
-		while (sl) {
-			doAnimation = sl->action;
-			printf("do %d\n", doAnimation);
-			animationCounter = 0;
-			glutPostRedisplay();
-			while(doAnimation != 0){}
-			printf("after while");
-			sl = sl->next;
-		}
-		if (hMethod == 1) {
-			h1Mode = 2;
-		}
-		else h2Mode = 2;
-		printf("problem solved!\n\n");
-	}
-}
-
+	//@@ create a new problem and initialize variables****************************************@@
 void newProblem() {
 	setupPuzzle();
 	h1Mode = 0;
 	h2Mode = 0;
+	doAnimation = 0;
 	findingSolution = 0;
 	runningAnimation = 0;
 	solutionAnimationCounter = 0;
@@ -1001,6 +948,7 @@ void newProblem() {
 	h2Solution = NULL;
 }
 
+	//@@ reload the same problem*************************************************************@@
 void reloadProblem() {
 	for (int i = 0; i < 9; i++) {
 		values[i] = initValues[i];
@@ -1051,17 +999,3 @@ void reloadProblem() {
 			currentPosition = i;
 	}
 }
-
-/*
-struct node;
-typedef struct node {
-	int childrenSize;
-	int values[9];
-	int g;
-	int h;
-	int zeroPos;
-	int lastAction; //1: up, 2: down, 3: left, 4: right
-	struct node *parent;
-	struct node *children;
-} Node;
-*/

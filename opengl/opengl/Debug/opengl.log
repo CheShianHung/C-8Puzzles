@@ -1,6 +1,6 @@
 ﻿  animation_ex.c
-c:\users\a2219\onedrive\documents\visual studio 2015\projects\opengl\opengl\animation_ex.c(320): warning C4133: 'initializing': incompatible types - from 'solutionList *' to 'List *'
-c:\users\a2219\onedrive\documents\visual studio 2015\projects\opengl\opengl\animation_ex.c(326): warning C4133: 'initializing': incompatible types - from 'solutionList *' to 'List *'
-c:\users\a2219\onedrive\documents\visual studio 2015\projects\opengl\opengl\animation_ex.c(956): warning C4133: 'initializing': incompatible types - from 'List *' to 'SolutionList *'
+c:\users\a2219\onedrive\documents\visual studio 2015\projects\opengl\opengl\animation_ex.c(309): warning C4133: 'initializing': incompatible types - from 'solutionList *' to 'List *'
+c:\users\a2219\onedrive\documents\visual studio 2015\projects\opengl\opengl\animation_ex.c(315): warning C4133: 'initializing': incompatible types - from 'solutionList *' to 'List *'
+c:\users\a2219\onedrive\documents\visual studio 2015\projects\opengl\opengl\animation_ex.c(467): warning C4305: 'function': truncation from 'double' to 'GLfloat'
   opengl.vcxproj -> C:\Users\a2219\OneDrive\Documents\Visual Studio 2015\Projects\opengl\Debug\opengl.exe
   opengl.vcxproj -> C:\Users\a2219\OneDrive\Documents\Visual Studio 2015\Projects\opengl\Debug\opengl.pdb (Partial PDB)
