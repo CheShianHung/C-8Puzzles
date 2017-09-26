@@ -15,10 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="opengl_ex.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="animation_ex.c">
+    <ClCompile Include="eight_slide_ex.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
